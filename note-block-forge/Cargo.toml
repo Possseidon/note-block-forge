@@ -1,0 +1,22 @@
+[package]
+name = "note-block-forge"
+version = "0.1.0"
+authors = ["Possseidon <xpossseidon@gmail.com>"]
+edition = "2021"
+description = "A DAW for Minecraft Note Block Music"
+readme = "README.md"
+repository = "https://github.com/Possseidon/note-block-forge"
+license = "MIT"
+keywords = ["minecraft", "note-block", "music", "daw", "audio"]
+categories = ["multimedia::audio", "games"]
+
+[dependencies]
+enum-map.workspace = true
+eframe.workspace = true
+egui.workspace = true
+egui_extras.workspace = true
+note-block-forge-lib = { path = "../note-block-forge-lib" }
+rfd.workspace = true
+rodio.workspace = true
+serde.workspace = true
+derive_more.workspace = true

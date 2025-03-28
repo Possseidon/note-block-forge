@@ -1,0 +1,14 @@
+[package]
+name = "note-block-forge-cli"
+version = "0.1.0"
+authors = ["Possseidon <xpossseidon@gmail.com>"]
+edition = "2021"
+description = "CLI for NoteBlockForge"
+readme = "README.md"
+repository = "https://github.com/Possseidon/note-block-forge"
+license = "MIT"
+keywords = ["minecraft", "note-block", "music", "cli", "audio"]
+categories = ["multimedia::audio", "games", "command-line-utilities"]
+
+[dependencies]
+clap.workspace = true
