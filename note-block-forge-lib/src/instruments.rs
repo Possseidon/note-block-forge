@@ -111,30 +111,28 @@ pub struct PitchFormatter {
 
 impl fmt::Display for PitchFormatter {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        use NoteOffset::{Flat, Sharp};
         match (self.pitch.ticks.rem_euclid(12), self.note_offset) {
-            (0, Sharp) => write!(f, "F#")?,
-            (0, Flat) => write!(f, "Gb")?,
+            (0, NoteOffset::Sharp) => write!(f, "F#")?,
+            (0, NoteOffset::Flat) => write!(f, "Gb")?,
             (1, _) => write!(f, "G")?,
-            (2, Sharp) => write!(f, "G#")?,
-            (2, Flat) => write!(f, "G#")?,
+            (2, NoteOffset::Sharp) => write!(f, "G#")?,
+            (2, NoteOffset::Flat) => write!(f, "G#")?,
             (3, _) => write!(f, "A")?,
-            (4, Sharp) => write!(f, "A#")?,
-            (4, Flat) => write!(f, "Bb")?,
+            (4, NoteOffset::Sharp) => write!(f, "A#")?,
+            (4, NoteOffset::Flat) => write!(f, "Bb")?,
             (5, _) => write!(f, "B")?,
             (6, _) => write!(f, "C")?,
-            (7, Sharp) => write!(f, "C#")?,
-            (7, Flat) => write!(f, "Db")?,
+            (7, NoteOffset::Sharp) => write!(f, "C#")?,
+            (7, NoteOffset::Flat) => write!(f, "Db")?,
             (8, _) => write!(f, "D")?,
-            (9, Sharp) => write!(f, "D#")?,
-            (9, Flat) => write!(f, "Eb")?,
+            (9, NoteOffset::Sharp) => write!(f, "D#")?,
+            (9, NoteOffset::Flat) => write!(f, "Eb")?,
             (10, _) => write!(f, "E")?,
             (11, _) => write!(f, "F")?,
             _ => unreachable!(),
         }
 
         let octave = self.base_octave + ((self.pitch.ticks as i16 + 6) / 12) as u8;
-        write!(f, "{}", octave)?;
-        Ok(())
+        write!(f, "{}", octave)
     }
 }
