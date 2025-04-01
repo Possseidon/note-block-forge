@@ -35,7 +35,7 @@ pub(crate) enum MenuEntry {
 
 use egui::{Response, Ui, Widget};
 
-use crate::{action::Action, NoteBlockForge};
+use crate::action::Action;
 
 pub(crate) const MAIN_MENU: Menu = {
     Menu::new(&[

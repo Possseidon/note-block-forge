@@ -47,10 +47,10 @@ impl MidiEvent {
             }),
             (0xA, [_, _]) => None, // Polyphonic Key Pressure (Aftertouch),
             (0xB, [_, _]) => None, // Control Change
-            (0xC, [_]) => None, // Program Change
-            (0xD, [_]) => None, // Channel Pressure (Aftertouch)
+            (0xC, [_]) => None,    // Program Change
+            (0xD, [_]) => None,    // Channel Pressure (Aftertouch)
             (0xE, [_, _]) => None, // Pitch Bend
-            (0xF, _) => None, // System
+            (0xF, _) => None,      // System
             _ => {
                 println!("unhandled midi event: {:?}", data);
                 None

@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 use egui::{Context, Grid};
 use note_block_forge_lib::midi::{
     config::{MidiConfig, MidiDeviceConfig},
-    connection::{MidiConnections, PortConnection},
+    connection::{DeviceState, MidiConnections},
 };
 
 #[derive(Default)]
@@ -26,23 +26,23 @@ pub(crate) fn midi_devices_dialog(
             Grid::new("midi-devices").show(ui, |ui| {
                 for (port, state) in connections.connections() {
                     match state {
-                        PortConnection::Unavailable => {
+                        DeviceState::Removed => {
                             ui.colored_label(ui.visuals().weak_text_color(), &port.name)
                                 .on_hover_text("device unavailable");
                         }
-                        PortConnection::Available => {
+                        DeviceState::New => {
                             ui.colored_label(ui.visuals().text_color(), &port.name)
                                 .on_hover_text("device available");
                         }
-                        PortConnection::Disconnected => {
+                        DeviceState::Disconnected => {
                             ui.colored_label(ui.visuals().text_color(), &port.name)
                                 .on_hover_text("device disconnected");
                         }
-                        PortConnection::ConnectError(error) => {
+                        DeviceState::ConnectError(error) => {
                             ui.colored_label(ui.visuals().error_fg_color, &port.name)
                                 .on_hover_text(error.to_string());
                         }
-                        PortConnection::Connected(_) => {
+                        DeviceState::Connected { connection: _ } => {
                             ui.colored_label(ui.visuals().strong_text_color(), &port.name)
                                 .on_hover_text("device connected");
                         }

@@ -13,7 +13,7 @@ use midir::{
 use rodio::OutputStreamHandle;
 
 use super::{
-    config::{MidiConfig, PortId},
+    config::{MidiConfig, MidiDeviceConfig, PortId},
     event::MidiEvent,
 };
 use crate::{
@@ -23,68 +23,56 @@ use crate::{
 
 pub struct MidiConnections {
     midi: MidiInput,
-    /// A list of all available ports.
-    ports: Vec<(PortId, MidiInputPort)>,
-    /// A mirror of the config with actual connection information.
-    connections: Vec<(PortId, PortConnection)>,
+    ports: BTreeMap<String, Vec<DeviceState>>,
     stream_handle: OutputStreamHandle,
     instrument_samples: Arc<BuiltinInstrumentSamples>,
 }
 
 impl MidiConnections {
     const CLIENT_NAME: &'static str = "NoteBlockForge";
-    const PORT_NAME: &'static str = "NoteBlockForge";
 
     pub fn new(
+        config: &MidiConfig,
         stream_handle: OutputStreamHandle,
         instrument_samples: Arc<BuiltinInstrumentSamples>,
     ) -> Result<Self, InitError> {
         let mut midi = MidiInput::new(Self::CLIENT_NAME)?;
         midi.ignore(Ignore::All);
-        let ports = Self::get_ports(&midi);
         Ok(Self {
             midi,
-            ports,
-            connections: Default::default(),
+            ports: config
+                .devices
+                .iter()
+                .map(|config| if config.connect {})
+                .collect(),
             stream_handle,
             instrument_samples,
         })
     }
 
-    pub fn ports(&self) -> &[(PortId, MidiInputPort)] {
+    pub fn config(&self) -> MidiConfig {
+        MidiConfig {
+            devices: self
+                .ports
+                .iter()
+                .map(|port| MidiDeviceConfig {
+                    id: port.id.clone(),
+                    connect: port.device.is_connected(),
+                })
+                .collect(),
+        }
+    }
+
+    pub fn ports(&self) -> &[MidiPort] {
         &self.ports
     }
 
-    pub fn connections(&self) -> &[(PortId, PortConnection)] {
-        &self.connections
-    }
-
+    /// Adds newly available ports and marks no longer available
     pub fn refresh_ports(&mut self) {
-        self.ports = Self::get_ports(&self.midi);
-    }
+        for port in self.midi.ports() {
+            let name = self.midi.port_name(&port);
 
-    pub fn load_config(&mut self, config: &MidiConfig) {
-        for (port_id, port) in &mut self.connections {
-            let device_config = config.devices.iter().find(|config| config.id == *port_id);
-            if let Some(config) = device_config {
-                if config.connect {
-                } else {
-                    *port = PortConnection::Disconnected;
-                }
-            } else {
-                *port = PortConnection::Available;
-            }
-        }
-
-        for config in &config.devices {
-            if !self
-                .connections
-                .iter()
-                .any(|(port_id, _)| port_id == &config.id)
-            {
-                self.connections
-                    .push((config.id.clone(), PortConnection::Unavailable));
-            }
+            self.ports.iter().find(|port| port.id.name == name)
         }
     }
 
@@ -140,22 +128,25 @@ impl MidiConnections {
     }
 }
 
-pub enum PortConnection {
-    /// The port exists but is not part of the config.
-    Available,
-    /// The port is part of the config but doesn't exist anymore.
+pub enum DeviceState {
+    /// There is no device with this name.
     Unavailable,
-    /// The port exists and is part of the config, but is not connected.
-    Disconnected,
-    /// The port exists and is part of the config, but connecting to it fails.
-    ConnectError(ConnectErrorKind),
-    /// The port exists, is part of the config and is connected.
-    Connected(MidiConnection),
+    /// There is a device with this name and runtime id.
+    Available {
+        runtime_id: String,
+        connection: Option<MidiConnection>,
+    },
+    /// There is no longer a device with this runtime id.
+    Removed { runtime_id: String },
 }
 
-impl PortConnection {
+impl DeviceState {
+    pub fn is_connected(&self) -> bool {
+        matches!(self, Self::Connected { connection: .. })
+    }
+
     pub fn channel(&self) -> Option<&Channel> {
-        if let Self::Connected(connection) = self {
+        if let Self::Connected { connection } = self {
             Some(&connection.channel)
         } else {
             None
@@ -163,7 +154,6 @@ impl PortConnection {
     }
 }
 
-/// A port is listed in the config and is connected.
 pub struct MidiConnection {
     pub channel: Channel,
     #[allow(dead_code)]

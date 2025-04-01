@@ -2,6 +2,7 @@ use std::{fmt, sync::Arc};
 
 use derive_more::From;
 use enum_map::Enum;
+use enumset::EnumSetType;
 
 use crate::midi::event::MidiNote;
 
@@ -10,13 +11,13 @@ pub enum Instrument {
     Custom(CustomInstrument),
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Enum, From)]
+#[derive(Clone, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Enum, From)]
 pub enum BuiltinInstrument {
     Melodic(MelodicInstrument),
     Percussion(PercussionInstrument),
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Enum)]
+#[derive(Debug, Hash, PartialOrd, Ord, Enum, EnumSetType)]
 pub enum MelodicInstrument {
     Bass,
     Bell,
@@ -61,7 +62,7 @@ impl MelodicInstrument {
     }
 }
 
-#[derive(Clone, Copy, Debug, Hash, PartialEq, Eq, PartialOrd, Ord, Enum)]
+#[derive(Debug, Hash, PartialOrd, Ord, Enum, EnumSetType)]
 pub enum PercussionInstrument {
     Snare,
     Hat,

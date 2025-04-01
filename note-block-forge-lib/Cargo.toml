@@ -13,6 +13,7 @@ categories = ["multimedia::audio", "games"]
 [dependencies]
 derive_more.workspace = true
 enum-map.workspace = true
+enumset.workspace = true
 midir.workspace = true
 rodio.workspace = true
 serde.workspace = true

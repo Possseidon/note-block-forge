@@ -10,6 +10,7 @@ eframe = { version = "0.31.1", features = ["persistence"] }
 egui = { version = "0.31.1" }
 egui_extras = { version = "0.31.1", features = ["image"] }
 enum-map = "2.7.3"
+enumset = "1.1.5"
 midir = "0.10.1"
 rfd = "0.15.3"
 rodio = { version = "0.20.1", default-features = false, features = ["vorbis"] }
