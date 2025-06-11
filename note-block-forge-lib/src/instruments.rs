@@ -17,6 +17,15 @@ pub enum BuiltinInstrument {
     Percussion(PercussionInstrument),
 }
 
+impl BuiltinInstrument {
+    pub fn base_midi_note(self) -> MidiNote {
+        match self {
+            Self::Melodic(instrument) => instrument.base_midi_note(),
+            Self::Percussion(_) => MelodicInstrument::Harp.base_midi_note(),
+        }
+    }
+}
+
 #[derive(Debug, Hash, PartialOrd, Ord, Enum, EnumSetType)]
 pub enum MelodicInstrument {
     Bass,

@@ -2,14 +2,20 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MidiConfig {
-    pub devices: BTreeMap<String, Vec<MidiDeviceConfig>>,
+    pub devices: Vec<MidiDeviceConfig>,
+    pub settings: BTreeMap<String, ()>,
 }
 
+/// Configuration for a single midi input device such as a midi keyboard.
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]
 pub struct MidiDeviceConfig {
-    pub id: PortId,
-    /// Whether to connect to the device.
+    /// The last known [`midir::MidiInputPort::id`].
+    pub id: String,
+    /// The last known [`midir::MidiInput::port_name`].
+    pub name: String,
+    /// Whether this device was previously connected and should attempt to reconnect.
     pub connect: bool,
+    pub settings: String,
 }
 
 #[derive(Clone, Debug, Hash, PartialEq, Eq, Serialize, Deserialize)]

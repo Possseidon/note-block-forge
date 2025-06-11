@@ -2,18 +2,17 @@ use std::{
     collections::BTreeMap,
     sync::{
         mpsc::{channel, Receiver, Sender},
-        Arc, Mutex,
+        Arc, Mutex, Weak,
     },
 };
 
 use midir::{
-    ConnectErrorKind, Ignore, InitError, MidiIO, MidiInput, MidiInputConnection, MidiInputPort,
-    MidiInputPorts,
+    ConnectError, ConnectErrorKind, Ignore, InitError, MidiIO, MidiInput, MidiInputConnection, MidiInputPort, MidiInputPorts
 };
 use rodio::OutputStreamHandle;
 
 use super::{
-    config::{MidiConfig, MidiDeviceConfig, PortId},
+    config::{MidiConfig, MidiDeviceConfig},
     event::MidiEvent,
 };
 use crate::{
@@ -23,7 +22,7 @@ use crate::{
 
 pub struct MidiConnections {
     midi: MidiInput,
-    ports: BTreeMap<String, Vec<DeviceState>>,
+    devices: Vec<MidiDevice>,
     stream_handle: OutputStreamHandle,
     instrument_samples: Arc<BuiltinInstrumentSamples>,
 }
@@ -40,10 +39,10 @@ impl MidiConnections {
         midi.ignore(Ignore::All);
         Ok(Self {
             midi,
-            ports: config
+            devices: config
                 .devices
                 .iter()
-                .map(|config| if config.connect {})
+                .map(|config| MidiDevice { id: config.id.clone(), name: config.name.clone(), connection: () })
                 .collect(),
             stream_handle,
             instrument_samples,
@@ -71,6 +70,7 @@ impl MidiConnections {
     pub fn refresh_ports(&mut self) {
         for port in self.midi.ports() {
             let name = self.midi.port_name(&port);
+            self.midi.connect(port, port_name, callback, data)
 
             self.ports.iter().find(|port| port.id.name == name)
         }
@@ -101,7 +101,7 @@ impl MidiConnections {
         midi_playback: Arc<Mutex<MidiPlayback>>,
         instrument_samples: Arc<BuiltinInstrumentSamples>,
         stream_handle: OutputStreamHandle,
-    ) -> impl FnMut(u64, &[u8], &mut ()) {
+    ) -> impl Fn(u64, &[u8], &mut ()) {
         move |_timestamp, data, ()| {
             if let Some(event) = MidiEvent::parse(data) {
                 event_sender.send(event).unwrap();
@@ -114,7 +114,7 @@ impl MidiConnections {
                         };
 
                         instrument_samples.play(
-                            BuiltinInstrument::Melodic(instrument),
+                            instrument,
                             NotePlayback::new()
                                 .with_volume(velocity.volume() * midi_playback.volume)
                                 .with_speed(note.pitch(instrument.base_midi_note()).speed())
@@ -128,25 +128,27 @@ impl MidiConnections {
     }
 }
 
-pub enum DeviceState {
-    /// There is no device with this name.
-    Unavailable,
-    /// There is a device with this name and runtime id.
-    Available {
-        runtime_id: String,
-        connection: Option<MidiConnection>,
-    },
-    /// There is no longer a device with this runtime id.
-    Removed { runtime_id: String },
+pub struct MidiDevice {
+    id: String,
+    name: String,
+    connection: Option<Result<MidiConnection, ConnectError<MidiInput>>>,
 }
 
-impl DeviceState {
-    pub fn is_connected(&self) -> bool {
-        matches!(self, Self::Connected { connection: .. })
+impl MidiDevice {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+
+    pub fn name(&self) -> &str {
+        &self.name
+    }
+
+    pub fn connection(&self) -> Result<bool, &ConnectError<MidiInput>> {
+
     }
 
     pub fn channel(&self) -> Option<&Channel> {
-        if let Self::Connected { connection } = self {
+        if let Some(Ok(connection)) = &self.connection {
             Some(&connection.channel)
         } else {
             None
@@ -154,8 +156,8 @@ impl DeviceState {
     }
 }
 
-pub struct MidiConnection {
-    pub channel: Channel,
+struct MidiConnection {
+    channel: Channel,
     #[allow(dead_code)]
     connection: MidiInputConnection<()>,
 }
@@ -170,13 +172,13 @@ impl std::fmt::Debug for MidiConnection {
 
 #[derive(Debug)]
 pub struct Channel {
-    pub playback: Arc<Mutex<MidiPlayback>>,
+    pub playback: Weak<Mutex<MidiPlayback>>,
     pub events: Receiver<MidiEvent>,
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct MidiPlayback {
-    pub instrument: Option<MelodicInstrument>,
+    pub instrument: Option<BuiltinInstrument>,
     pub volume: f32,
     pub pan: f32,
 }
